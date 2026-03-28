@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ThatBobo PWA</title>
+
+  <!-- Link to your manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Basic styling -->
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to ThatBobo-code PWA</h1>
+  <p>Your app is alive.</p>
+
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</body>
+</html>
