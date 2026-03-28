@@ -7,18 +7,17 @@
   <link rel="manifest" href="manifest.json">
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: system-ui, sans-serif;
       background: #0f172a;
       color: #e5e7eb;
       height: 100vh;
       display: flex;
       flex-direction: column;
     }
+
     header {
       padding: 10px 16px;
       background: #020617;
@@ -27,12 +26,14 @@
       align-items: center;
       justify-content: space-between;
     }
+
     header .title {
       display: flex;
       align-items: center;
       gap: 8px;
       font-weight: 600;
     }
+
     header .title span.logo {
       width: 24px;
       height: 24px;
@@ -40,6 +41,7 @@
       background: radial-gradient(circle at 30% 20%, #f97316, #b45309);
       display: inline-block;
     }
+
     header .actions button {
       background: #111827;
       color: #e5e7eb;
@@ -78,6 +80,7 @@
       border-bottom: 1px solid #1f2937;
       background: #020617;
     }
+
     .editor-tab {
       flex: 1;
       padding: 8px 10px;
@@ -87,9 +90,11 @@
       border-right: 1px solid #1f2937;
       color: #9ca3af;
     }
+
     .editor-tab:last-child {
       border-right: none;
     }
+
     .editor-tab.active {
       background: #111827;
       color: #e5e7eb;
@@ -101,6 +106,7 @@
       position: relative;
       min-height: 0;
     }
+
     textarea {
       position: absolute;
       inset: 0;
@@ -110,7 +116,7 @@
       border: none;
       outline: none;
       padding: 10px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 13px;
       background: #020617;
       color: #e5e7eb;
@@ -126,6 +132,7 @@
       flex-direction: column;
       background: #020617;
     }
+
     .preview-header {
       padding: 8px 10px;
       border-bottom: 1px solid #1f2937;
@@ -135,6 +142,7 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .preview-header button {
       background: #111827;
       color: #e5e7eb;
@@ -144,9 +152,11 @@
       font-size: 12px;
       cursor: pointer;
     }
+
     .preview-header button:hover {
       background: #1f2937;
     }
+
     iframe {
       flex: 1;
       border: none;
@@ -154,9 +164,7 @@
     }
 
     @media (max-width: 800px) {
-      .panes {
-        flex-direction: column;
-      }
+      .panes { flex-direction: column; }
       .editor-column,
       .preview-column {
         width: 100%;
@@ -170,6 +178,7 @@
   </style>
 </head>
 <body>
+
   <header>
     <div class="title">
       <span class="logo"></span>
@@ -183,12 +192,14 @@
 
   <main>
     <div class="panes">
+
       <section class="editor-column">
         <div class="editor-tabs">
           <div class="editor-tab active" data-target="html">HTML</div>
           <div class="editor-tab" data-target="css">CSS</div>
           <div class="editor-tab" data-target="js">JS</div>
         </div>
+
         <div class="editor-area">
           <textarea id="editor-html"></textarea>
           <textarea id="editor-css" style="display:none;"></textarea>
@@ -198,11 +209,14 @@
 
       <section class="preview-column">
         <div class="preview-header">
-          <span>Preview</span>
+          <span>WebView</span>
           <button id="run">Run ▶</button>
         </div>
-        <iframe id="preview"></iframe>
+
+        <!-- Our custom WebView -->
+        <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
       </section>
+
     </div>
   </main>
 
@@ -220,9 +234,31 @@
     function loadProject() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) {
-        htmlEditor.value = "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Babrer</title>\n</head>\n<body>\n  <h1>Hello from Babrer</h1>\n  <p>Edit HTML, CSS, and JS, then click Run.</p>\n</body>\n</html>";
-        cssEditor.value = "body {\n  font-family: system-ui, sans-serif;\n  background: #0f172a;\n  color: #e5e7eb;\n  text-align: center;\n  padding-top: 40px;\n}\n\nh1 {\n  color: #f97316;\n}";
-        jsEditor.value = "console.log('Babrer is running');";
+        htmlEditor.value =
+`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Babrer</title>
+</head>
+<body>
+  <h1>Hello from Babrer</h1>
+  <p>Edit HTML, CSS, and JS, then click Run.</p>
+</body>
+</html>`;
+        cssEditor.value =
+`body {
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  text-align: center;
+  padding-top: 40px;
+}
+
+h1 {
+  color: #f97316;
+}`;
+        jsEditor.value = `console.log('Babrer WebView running');`;
         return;
       }
       try {
@@ -246,13 +282,21 @@
 
     function runProject() {
       saveProject();
+
       const html = htmlEditor.value;
       const css = "<style>" + cssEditor.value + "</style>";
       const js = "<script>" + jsEditor.value.replace(/<\/script>/g, "<\\/script>") + "<\/script>";
 
-      const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+      const fullDoc =
+        "<!DOCTYPE html><html>" +
+        html
+          .replace("</head>", css + "</head>")
+          .replace("</body>", js + "</body>") +
+        "</html>";
+
+      const doc = previewFrame.contentWindow.document;
       doc.open();
-      doc.write(html.replace("</head>", css + "</head>").replace("</body>", js + "</body>"));
+      doc.write(fullDoc);
       doc.close();
     }
 
@@ -291,5 +335,6 @@
       navigator.serviceWorker.register('service-worker.js');
     }
   </script>
+
 </body>
 </html>
