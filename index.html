@@ -52,9 +52,6 @@
       font-size: 13px;
       cursor: pointer;
     }
-    header .actions button:hover {
-      background: #1f2937;
-    }
 
     main {
       flex: 1;
@@ -92,10 +89,6 @@
       color: #9ca3af;
     }
 
-    .editor-tab:last-child {
-      border-right: none;
-    }
-
     .editor-tab.active {
       background: #111827;
       color: #e5e7eb;
@@ -117,13 +110,12 @@
       border: none;
       outline: none;
       padding: 10px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: ui-monospace, monospace;
       font-size: 13px;
       background: #020617;
       color: #e5e7eb;
       line-height: 1.4;
       tab-size: 2;
-      white-space: pre;
       overflow: auto;
     }
 
@@ -144,98 +136,114 @@
       align-items: center;
     }
 
-    .preview-header button {
-      background: #111827;
-      color: #e5e7eb;
-      border: 1px solid #374151;
-      border-radius: 4px;
-      padding: 4px 8px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    .preview-header button:hover {
-      background: #1f2937;
-    }
-
     iframe {
       flex: 1;
       border: none;
       background: white;
     }
 
-    @media (max-width: 800px) {
-      .panes { flex-direction: column; }
-      .editor-column,
-      .preview-column {
-        width: 100%;
-        height: 50%;
-      }
-      .editor-column {
-        border-right: none;
-        border-bottom: 1px solid #1f2937;
-      }
+    .console-panel {
+      height: 150px;
+      background: #0f172a;
+      border-top: 1px solid #1f2937;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .console-header {
+      padding: 6px 10px;
+      font-size: 12px;
+      color: #9ca3af;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    #console-output {
+      flex: 1;
+      padding: 8px;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      color: #e5e7eb;
+      overflow-y: auto;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="title">
-      <span class="logo"></span>
-      <span>Babrer</span>
-      <span style="font-size: 12px; color:#6b7280;">online code editor</span>
-    </div>
-    <div class="actions">
-      <button id="clear-project">Clear</button>
-    </div>
-  </header>
+<header>
+  <div class="title">
+    <span class="logo"></span>
+    <span>Babrer</span>
+    <span style="font-size: 12px; color:#6b7280;">online code editor</span>
+  </div>
+  <div class="actions">
+    <button id="clear-project">Clear</button>
+  </div>
+</header>
 
-  <main>
-    <div class="panes">
+<main>
+  <div class="panes">
 
-      <section class="editor-column">
-        <div class="editor-tabs">
-          <div class="editor-tab active" data-target="html">HTML</div>
-          <div class="editor-tab" data-target="css">CSS</div>
-          <div class="editor-tab" data-target="js">JS</div>
-        </div>
+    <section class="editor-column">
+      <div class="editor-tabs">
+        <div class="editor-tab active" data-target="html">HTML</div>
+        <div class="editor-tab" data-target="css">CSS</div>
+        <div class="editor-tab" data-target="js">JS</div>
+      </div>
 
-        <div class="editor-area">
-          <textarea id="editor-html"></textarea>
-          <textarea id="editor-css" style="display:none;"></textarea>
-          <textarea id="editor-js" style="display:none;"></textarea>
-        </div>
-      </section>
+      <div class="editor-area">
+        <textarea id="editor-html"></textarea>
+        <textarea id="editor-css" style="display:none;"></textarea>
+        <textarea id="editor-js" style="display:none;"></textarea>
+      </div>
+    </section>
 
-      <section class="preview-column">
-        <div class="preview-header">
-          <span>WebView</span>
-          <button id="run">Run ▶</button>
-        </div>
+    <section class="preview-column">
+      <div class="preview-header">
+        <span>WebView</span>
+        <button id="run">Run ▶</button>
+      </div>
 
-        <!-- Our custom WebView -->
-        <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
-      </section>
+      <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
 
-    </div>
-  </main>
+      <div class="console-panel">
+        <div class="console-header">Console</div>
+        <div id="console-output"></div>
+      </div>
+    </section>
 
-  <script>
-    const htmlEditor = document.getElementById('editor-html');
-    const cssEditor = document.getElementById('editor-css');
-    const jsEditor = document.getElementById('editor-js');
-    const previewFrame = document.getElementById('preview');
-    const runButton = document.getElementById('run');
-    const clearButton = document.getElementById('clear-project');
-    const tabs = Array.from(document.querySelectorAll('.editor-tab'));
+  </div>
+</main>
 
-    const STORAGE_KEY = 'babrer-project';
+<script>
+  var htmlEditor = document.getElementById('editor-html');
+  var cssEditor = document.getElementById('editor-css');
+  var jsEditor = document.getElementById('editor-js');
+  var previewFrame = document.getElementById('preview');
+  var runButton = document.getElementById('run');
+  var clearButton = document.getElementById('clear-project');
+  var tabs = Array.from(document.querySelectorAll('.editor-tab'));
 
-    function loadProject() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (!saved) {
-        htmlEditor.value =
+  var STORAGE_KEY = 'babrer-project';
+
+  function printToConsole(type, message) {
+    var output = document.getElementById('console-output');
+    var line = document.createElement('div');
+    line.textContent = message;
+    line.style.color = type === 'error' ? '#f87171' : '#e5e7eb';
+    output.appendChild(line);
+    output.scrollTop = output.scrollHeight;
+  }
+
+  window.addEventListener('message', function(event) {
+    if (!event.data || !event.data.babrerConsole) return;
+    printToConsole(event.data.type, event.data.message);
+  });
+
+  function loadProject() {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      htmlEditor.value =
 `<!DOCTYPE html>
 <html>
 <head>
@@ -247,7 +255,7 @@
   <p>Edit HTML, CSS, and JS, then click Run.</p>
 </body>
 </html>`;
-        cssEditor.value =
+      cssEditor.value =
 `body {
   font-family: system-ui, sans-serif;
   background: #0f172a;
@@ -259,83 +267,94 @@
 h1 {
   color: #f97316;
 }`;
-        jsEditor.value = `console.log('Babrer WebView running');`;
-        return;
-      }
-      try {
-        const project = JSON.parse(saved);
-        htmlEditor.value = project.html || '';
-        cssEditor.value = project.css || '';
-        jsEditor.value = project.js || '';
-      } catch (e) {
-        console.error('Failed to parse saved project', e);
-      }
+      jsEditor.value = `console.log('Babrer WebView running');`;
+      return;
     }
+    try {
+      var project = JSON.parse(saved);
+      htmlEditor.value = project.html || '';
+      cssEditor.value = project.css || '';
+      jsEditor.value = project.js || '';
+    } catch (e) {}
+  }
 
-    function saveProject() {
-      const project = {
-        html: htmlEditor.value,
-        css: cssEditor.value,
-        js: jsEditor.value
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-    }
+  function saveProject() {
+    var project = {
+      html: htmlEditor.value,
+      css: cssEditor.value,
+      js: jsEditor.value
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+  }
 
-    function runProject() {
-      saveProject();
+  function runProject() {
+    saveProject();
 
-      const html = htmlEditor.value;
-      const css = "<style>" + cssEditor.value + "</style>";
-      const js = "<script>" + jsEditor.value.replace(/<\/script>/g, "<\\/script>") + "<\/script>";
+    var html = htmlEditor.value;
+    var css = "<style>" + cssEditor.value + "</style>";
+    var js = "<script>" + jsEditor.value.replace(/<\/script>/g, "<\\/script>") + "<\/script>";
 
-      const fullDoc =
-        "<!DOCTYPE html><html>" +
-        html
-          .replace("</head>", css + "</head>")
-          .replace("</body>", js + "</body>") +
-        "</html>";
+    var injectedConsole =
+      `<script>
+        (function() {
+          var send = function(type, args) {
+            parent.postMessage({ babrerConsole: true, type: type, message: args.join(' ') }, '*');
+          };
+          console.log = function() { send('log', Array.from(arguments)); };
+          console.error = function() { send('error', Array.from(arguments)); };
+          console.warn = function() { send('warn', Array.from(arguments)); };
+          console.info = function() { send('info', Array.from(arguments)); };
+        })();
+      <\/script>`;
 
-      const doc = previewFrame.contentWindow.document;
-      doc.open();
-      doc.write(fullDoc);
-      doc.close();
-    }
+    var fullDoc =
+      "<!DOCTYPE html><html>" +
+      html
+        .replace("</head>", css + "</head>")
+        .replace("</body>", injectedConsole + js + "</body>") +
+      "</html>";
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+    var doc = previewFrame.contentWindow.document;
+    doc.open();
+    doc.write(fullDoc);
+    doc.close();
+  }
 
-        const target = tab.dataset.target;
-        htmlEditor.style.display = target === 'html' ? 'block' : 'none';
-        cssEditor.style.display = target === 'css' ? 'block' : 'none';
-        jsEditor.style.display = target === 'js' ? 'block' : 'none';
-      });
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+
+      var target = tab.dataset.target;
+      htmlEditor.style.display = target === 'html' ? 'block' : 'none';
+      cssEditor.style.display = target === 'css' ? 'block' : 'none';
+      jsEditor.style.display = target === 'js' ? 'block' : 'none';
     });
+  });
 
-    runButton.addEventListener('click', runProject);
+  runButton.addEventListener('click', runProject);
 
-    clearButton.addEventListener('click', () => {
-      if (confirm('Clear current project?')) {
-        localStorage.removeItem(STORAGE_KEY);
-        loadProject();
-        runProject();
-      }
-    });
-
-    ['input', 'keyup', 'change'].forEach(evt => {
-      htmlEditor.addEventListener(evt, saveProject);
-      cssEditor.addEventListener(evt, saveProject);
-      jsEditor.addEventListener(evt, saveProject);
-    });
-
-    loadProject();
-    runProject();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
+  clearButton.addEventListener('click', function() {
+    if (confirm('Clear current project?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      loadProject();
+      runProject();
     }
-  </script>
+  });
+
+  ['input', 'keyup', 'change'].forEach(function(evt) {
+    htmlEditor.addEventListener(evt, saveProject);
+    cssEditor.addEventListener(evt, saveProject);
+    jsEditor.addEventListener(evt, saveProject);
+  });
+
+  loadProject();
+  runProject();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+  }
+</script>
 
 </body>
 </html>
