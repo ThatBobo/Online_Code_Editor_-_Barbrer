@@ -2,26 +2,291 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ThatBobo PWA</title>
+  <title>Babrer – Online Code Editor</title>
 
-  <!-- Link to your manifest -->
   <link rel="manifest" href="manifest.json">
 
-  <!-- Basic styling -->
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: sans-serif;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 10px 16px;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header .title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+    header .title span.logo {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #f97316, #b45309);
+      display: inline-block;
+    }
+    header .actions button {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    header .actions button:hover {
+      background: #1f2937;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+
+    .panes {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .editor-column {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #1f2937;
+      background: #020617;
+    }
+
+    .editor-tabs {
+      display: flex;
+      border-bottom: 1px solid #1f2937;
+      background: #020617;
+    }
+    .editor-tab {
+      flex: 1;
+      padding: 8px 10px;
       text-align: center;
-      padding: 40px;
+      font-size: 13px;
+      cursor: pointer;
+      border-right: 1px solid #1f2937;
+      color: #9ca3af;
+    }
+    .editor-tab:last-child {
+      border-right: none;
+    }
+    .editor-tab.active {
+      background: #111827;
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .editor-area {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+    textarea {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      resize: none;
+      border: none;
+      outline: none;
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      background: #020617;
+      color: #e5e7eb;
+      line-height: 1.4;
+      tab-size: 2;
+      white-space: pre;
+      overflow: auto;
+    }
+
+    .preview-column {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      background: #020617;
+    }
+    .preview-header {
+      padding: 8px 10px;
+      border-bottom: 1px solid #1f2937;
+      font-size: 13px;
+      color: #9ca3af;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .preview-header button {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .preview-header button:hover {
+      background: #1f2937;
+    }
+    iframe {
+      flex: 1;
+      border: none;
+      background: white;
+    }
+
+    @media (max-width: 800px) {
+      .panes {
+        flex-direction: column;
+      }
+      .editor-column,
+      .preview-column {
+        width: 100%;
+        height: 50%;
+      }
+      .editor-column {
+        border-right: none;
+        border-bottom: 1px solid #1f2937;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to ThatBobo-code PWA</h1>
-  <p>Your app is alive.</p>
+  <header>
+    <div class="title">
+      <span class="logo"></span>
+      <span>Babrer</span>
+      <span style="font-size: 12px; color:#6b7280;">online code editor</span>
+    </div>
+    <div class="actions">
+      <button id="clear-project">Clear</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="panes">
+      <section class="editor-column">
+        <div class="editor-tabs">
+          <div class="editor-tab active" data-target="html">HTML</div>
+          <div class="editor-tab" data-target="css">CSS</div>
+          <div class="editor-tab" data-target="js">JS</div>
+        </div>
+        <div class="editor-area">
+          <textarea id="editor-html"></textarea>
+          <textarea id="editor-css" style="display:none;"></textarea>
+          <textarea id="editor-js" style="display:none;"></textarea>
+        </div>
+      </section>
+
+      <section class="preview-column">
+        <div class="preview-header">
+          <span>Preview</span>
+          <button id="run">Run ▶</button>
+        </div>
+        <iframe id="preview"></iframe>
+      </section>
+    </div>
+  </main>
 
   <script>
-    // Register service worker
+    const htmlEditor = document.getElementById('editor-html');
+    const cssEditor = document.getElementById('editor-css');
+    const jsEditor = document.getElementById('editor-js');
+    const previewFrame = document.getElementById('preview');
+    const runButton = document.getElementById('run');
+    const clearButton = document.getElementById('clear-project');
+    const tabs = Array.from(document.querySelectorAll('.editor-tab'));
+
+    const STORAGE_KEY = 'babrer-project';
+
+    function loadProject() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) {
+        htmlEditor.value = "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Babrer</title>\n</head>\n<body>\n  <h1>Hello from Babrer</h1>\n  <p>Edit HTML, CSS, and JS, then click Run.</p>\n</body>\n</html>";
+        cssEditor.value = "body {\n  font-family: system-ui, sans-serif;\n  background: #0f172a;\n  color: #e5e7eb;\n  text-align: center;\n  padding-top: 40px;\n}\n\nh1 {\n  color: #f97316;\n}";
+        jsEditor.value = "console.log('Babrer is running');";
+        return;
+      }
+      try {
+        const project = JSON.parse(saved);
+        htmlEditor.value = project.html || '';
+        cssEditor.value = project.css || '';
+        jsEditor.value = project.js || '';
+      } catch (e) {
+        console.error('Failed to parse saved project', e);
+      }
+    }
+
+    function saveProject() {
+      const project = {
+        html: htmlEditor.value,
+        css: cssEditor.value,
+        js: jsEditor.value
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+    }
+
+    function runProject() {
+      saveProject();
+      const html = htmlEditor.value;
+      const css = "<style>" + cssEditor.value + "</style>";
+      const js = "<script>" + jsEditor.value.replace(/<\/script>/g, "<\\/script>") + "<\/script>";
+
+      const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+      doc.open();
+      doc.write(html.replace("</head>", css + "</head>").replace("</body>", js + "</body>"));
+      doc.close();
+    }
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const target = tab.dataset.target;
+        htmlEditor.style.display = target === 'html' ? 'block' : 'none';
+        cssEditor.style.display = target === 'css' ? 'block' : 'none';
+        jsEditor.style.display = target === 'js' ? 'block' : 'none';
+      });
+    });
+
+    runButton.addEventListener('click', runProject);
+
+    clearButton.addEventListener('click', () => {
+      if (confirm('Clear current project?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        loadProject();
+        runProject();
+      }
+    });
+
+    ['input', 'keyup', 'change'].forEach(evt => {
+      htmlEditor.addEventListener(evt, saveProject);
+      cssEditor.addEventListener(evt, saveProject);
+      jsEditor.addEventListener(evt, saveProject);
+    });
+
+    loadProject();
+    runProject();
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js');
     }
