@@ -290,6 +290,9 @@ h1 {
   function runProject() {
     saveProject();
 
+    // Clear console every run
+    document.getElementById('console-output').innerHTML = '';
+
     var html = htmlEditor.value;
     var css = "<style>" + cssEditor.value + "</style>";
     var js = "<script>" + jsEditor.value.replace(/<\/script>/g, "<\\/script>") + "<\/script>";
