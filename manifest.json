@@ -1,10 +1,12 @@
 {
-  "name": "ThatBobo PWA",
-  "short_name": "BoboApp",
+  "name": "Babrer – Online Code Editor",
+  "short_name": "Babrer",
   "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4a90e2",
+  "background_color": "#0f172a",
+  "theme_color": "#020617",
+  "description": "A fast, offline‑ready in‑browser code editor for HTML, CSS, and JavaScript.",
   "icons": [
     {
       "src": "icons/icon-192.png",
