@@ -3,7 +3,8 @@ self.addEventListener('install', event => {
     caches.open('bobo-cache').then(cache => {
       return cache.addAll([
         'index.html',
-        'manifest.json'
+        'manifest.json',
+        'icons/icon-192.png'
       ]);
     })
   );
